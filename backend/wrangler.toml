@@ -1,0 +1,8 @@
+name = "sandxcdd-worker"
+main = "src/index.js"
+compatibility_date = "2023-10-01"
+
+# Variáveis (Mantenha os tokens apenas no painel da Cloudflare por segurança militar)
+# [vars]
+# GOOGLE_VISION_API_KEY = "segredo"
+# WHATSAPP_TOKEN = "segredo"
