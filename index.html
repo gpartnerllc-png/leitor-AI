@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Controle</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-gray-200 font-sans min-h-screen flex items-center justify-center p-6">
+
+    <div class="bg-gray-800 border border-gray-700 rounded-xl shadow-2xl p-8 w-full max-w-2xl">
+        <div class="border-b border-gray-700 pb-4 mb-6">
+            <h1 class="text-3xl font-bold text-white tracking-wide">Seter <span class="text-blue-500">Terminal</span></h1>
+            <p class="text-gray-400 text-sm mt-1">Gestão de Entregas e KPIs</p>
+        </div>
+
+        <div class="mb-6">
+            <label for="inputData" class="block text-sm font-medium text-gray-300 mb-2">Carga de Teste (JSON)</label>
+            <textarea id="inputData" rows="3" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-green-400 font-mono text-sm focus:outline-none focus:border-blue-500 transition" placeholder='{"kpi": "entrega_concluida"}'></textarea>
+        </div>
+
+        <button id="btnEnviar" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 px-4 rounded-lg shadow-lg transition duration-200 flex justify-center items-center gap-2">
+            <span>Transmitir para o Motor Cloudflare</span>
+            <svg class="w-4 h-4 hidden" id="spinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+        </button>
+
+        <div class="mt-8">
+            <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">Status do Motor</h2>
+            <div id="terminalOutput" class="bg-black rounded-lg p-4 font-mono text-sm text-gray-300 overflow-x-auto border border-gray-700 min-h-[100px]">
+                Aguardando transmissão...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('btnEnviar').addEventListener('click', function() {
+            const output = document.getElementById('terminalOutput');
+            const spinner = document.getElementById('spinner');
+            const inputData = document.getElementById('inputData').value || '{"dados": "teste padrão"}';
+            
+            // UI de Carregamento
+            output.innerHTML = '<span class="text-yellow-400">Conectando ao worker...</span>';
+            spinner.classList.remove('hidden');
+
+            // Preparando a carga
+            let carga;
+            try {
+                carga = JSON.parse(inputData); // Tenta ler como JSON
+            } catch (e) {
+                carga = { dados: inputData }; // Se falhar, manda como texto puro
+            }
+
+            // O FETCH EXATO QUE VOCÊ PEDIU
+            fetch('https://leitor.contatodroppfy.workers.dev/api/ler', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(carga)
+            })
+            .then(response => {
+                if (!response.ok) throw new Error("Erro na comunicação com o servidor.");
+                return response.json();
+            })
+            .then(data => {
+                // Sucesso: Imprime a resposta formatada na tela
+                console.log("Dados recebidos do motor:", data);
+                output.innerHTML = `<span class="text-green-400">Resposta Recebida:</span>\n\n` + JSON.stringify(data, null, 2);
+            })
+            .catch(error => {
+                // Erro: Imprime em vermelho
+                output.innerHTML = `<span class="text-red-500">Falha Crítica: ${error.message}</span>\nVerifique se a rota do seu Worker está ativa.`;
+            })
+            .finally(() => {
+                spinner.classList.add('hidden');
+            });
+        });
+    </script>
+</body>
+</html>
