@@ -1,1 +1,5 @@
+name = "leitor"
+main = "index.js" # ou o nome do seu arquivo principal do worker
+compatibility_date = "2024-01-01"
 
+workers_dev = true   # <--- ESSA LINHA DIZ À CLOUDFLARE PARA ATIVAR O SUBDOMÍNIO!
