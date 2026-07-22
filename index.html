@@ -114,6 +114,7 @@
         margin-bottom: 16px;
       }
 
+      /* Dropzone — a captura é o herói da página */
       .dropzone {
         border: 1.5px dashed rgba(47, 111, 237, 0.4);
         border-radius: 14px;
@@ -194,6 +195,7 @@
         border-color: var(--cyan-pulse);
       }
 
+      /* Leitor digital — elemento assinatura: réplica do visor de um medidor real */
       .visor-medidor {
         background: radial-gradient(
           ellipse at center,
@@ -258,11 +260,12 @@
         cursor: not-allowed;
       }
 
+      /* Fatura */
       .linha-fatura {
         display: flex;
         justify-content: space-between;
         padding: 10px 0;
-        font-size: 13px;
+        font-size: 14px;
         border-bottom: 1px solid var(--border-soft);
       }
       .linha-fatura:last-child {
@@ -275,7 +278,7 @@
         font-family: "JetBrains Mono", monospace;
         font-weight: 600;
       }
-      
+
       .destaque-subtotal {
         background: rgba(255, 255, 255, 0.02);
         padding-left: 8px;
@@ -436,32 +439,30 @@
         </div>
         <div id="faturaConteudo" style="display: none">
           <div class="linha-fatura">
-            <span class="rotulo" id="rotuloConsumo">Consumo</span>
-            <span class="valor" id="valorConsumo">—</span>
+            <span class="rotulo" id="rotuloConsumo">Consumo</span
+            ><span class="valor" id="valorConsumo">—</span>
           </div>
           <div class="linha-fatura">
-            <span class="rotulo" id="rotuloTE">Tarifa TE (Energia) Líquida</span>
-            <span class="valor" id="valorTE">—</span>
+            <span class="rotulo" id="rotuloBase"
+              >Tarifa Base (TE+TUSD c/ Bandeira)</span
+            ><span class="valor" id="valorBase">—</span>
           </div>
           <div class="linha-fatura">
-            <span class="rotulo" id="rotuloTUSD">TUSD (Uso da Rede + Fio B GD) Líquida</span>
-            <span class="valor" id="valorTUSD">—</span>
-          </div>
-          <div class="linha-fatura">
-            <span class="rotulo" id="rotuloImpostos">Tributos incidentes (ICMS + PIS/COFINS)</span>
-            <span class="valor" id="valorImpostos">—</span>
+            <span class="rotulo" id="rotuloImpostos"
+              >Tributos (ICMS 19% + PIS/COFINS)</span
+            ><span class="valor" id="valorImpostos">—</span>
           </div>
           <div class="linha-fatura destaque-subtotal">
-            <span class="rotulo" id="rotuloTarifa" style="color: var(--text-primary); font-weight: 600;">Subtotal Serviço</span>
-            <span class="valor" id="valorTarifa">—</span>
+            <span class="rotulo" id="rotuloTarifa">Valor do serviço</span
+            ><span class="valor" id="valorTarifa">—</span>
           </div>
           <div class="linha-fatura" id="linhaExtra">
-            <span class="rotulo" id="rotuloExtra">Taxa adicional</span>
-            <span class="valor" id="valorExtra">—</span>
+            <span class="rotulo" id="rotuloExtra">Taxa adicional</span
+            ><span class="valor" id="valorExtra">—</span>
           </div>
           <div class="linha-fatura" id="linhaBasica" style="display: none">
-            <span class="rotulo">Tarifa básica</span>
-            <span class="valor" id="valorBasica">—</span>
+            <span class="rotulo">Tarifa básica</span
+            ><span class="valor" id="valorBasica">—</span>
           </div>
           <div class="total-fatura">
             <span class="label">Total a pagar</span>
@@ -474,7 +475,8 @@
       </div>
 
       <div class="rodape-tecnico">
-        Água: Saneago — Res. Conjunta 1/2026 AGR/AMAE · Energia: Equatorial GO / Regras GD Lei 14.300
+        Água: Saneago — Res. Conjunta 1/2026 AGR/AMAE · Energia: Equatorial GO
+        (valor de referência)
       </div>
       <div class="rodape-tecnico">
         leitor.contatodroppfy.workers.dev · TLS · JWT · rate-limited
@@ -494,7 +496,7 @@
       const statusTexto = document.getElementById("statusTexto");
       const statusConfianca = document.getElementById("statusConfianca");
       const digitos = [0, 1, 2, 3, 4].map((i) =>
-        document.getElementById("d" + i)
+        document.getElementById("d" + i),
       );
 
       btnAgua.onclick = () => {
@@ -517,7 +519,7 @@
         }
       };
 
-      // ===== Animação do visor =====
+      // ===== Animação do visor (elemento assinatura) =====
       function animarVisor(leituraFinal) {
         const str = String(leituraFinal).padStart(5, "0").split("");
         digitos.forEach((el, i) => {
@@ -530,6 +532,7 @@
       }
 
       // ===== Fluxo principal =====
+      // Troque REST_API_URL pelo endereço do backend Node publicado (Railway/Render)
       const API_URL = "https://cd-leitor-medidores.contatodroppfy.workers.dev/";
 
       btnProcessar.onclick = async () => {
@@ -548,6 +551,7 @@
 
         let leituraFinal;
         if (leituraManual) {
+          // Caminho manual: sem OCR, usa exatamente o número digitado
           statusTexto.textContent = "usando leitura digitada manualmente…";
           await new Promise((r) => setTimeout(r, 300));
           leituraFinal = Number(leituraManual);
@@ -556,10 +560,13 @@
             '<span class="ok">leitura manual aplicada</span>';
           statusConfianca.textContent = "origem: digitada";
         } else {
+          // Caminho por foto — ainda em modo demonstração até o frontend ser
+          // conectado de vez ao backend (precisa de login/token — próximo passo)
           statusTexto.textContent =
             "processando com visão computacional… (modo demonstração)";
           await new Promise((r) => setTimeout(r, 900));
-          leituraFinal = leituraAnterior + 210; // Exemplo de consumo
+          leituraFinal = leituraAnterior + 96;
+          // simula 96 m³/kWh de consumo no mês
           animarVisor(leituraFinal);
           statusTexto.innerHTML =
             '<span class="ok">leitura confirmada (demo)</span>';
@@ -570,17 +577,20 @@
         btnProcessar.disabled = false;
       };
 
-      // ===== CÁLCULOS REGULATÓRIOS E TRIBUTÁRIOS =====
       function mostrarFatura(tipo, consumo) {
         document.getElementById("faturaVazia").style.display = "none";
         document.getElementById("faturaConteudo").style.display = "block";
 
         const unidade = tipo === "AGUA" ? "m³" : "kWh";
-        let valorServico, extra, tarifaBasica = 0;
-        let valorTE = 0, valorTUSD = 0, valorImpostos = 0;
+        let valorServico,
+          extra,
+          tarifaBasica = 0;
+        let valorBaseLiq = 0,
+          valorImpostos = 0;
 
         if (tipo === "AGUA") {
-          // Tabela oficial Saneago / AGR-AMAE
+          // Tabela oficial: Resolução Conjunta Nº 1/2026/AGR/GESG-06064 - AGR/AMAE
+          // (Residencial Normal) — mesmos valores usados no backend/billing.js
           const faixasAgua = [
             { ate: 10, agua: 5.77, esgoto: 4.61 + 1.15 },
             { ate: 15, agua: 6.51, esgoto: 5.21 + 1.3 },
@@ -605,114 +615,95 @@
             restante -= naFaixa;
             anterior = faixa.ate;
           }
-
           valorServico = totalAgua;
           extra = totalEsgoto;
           tarifaBasica = 17.46;
-
         } else {
-          // ===== ESTRUTURA TARIFFÁRIA DE ENERGIA =====
-
-          // 1. Definição da Tarifa Base (TE vs TUSD + Regra Fio B Microgeração)
-          const tarifaTE = 0.3850; // Preço da Energia (Produto)
-          const tarifaTUSD_Base = 0.2150; // Componentes adicionais da TUSD
-
-          // Marco Legal da Microgeração Distribuída (Lei 14.300) - Cobrança gradual do Fio B
-          const tarifaFioB_Cheia = 0.2000;
-          const percentualFioB = 0.60; // Ano de transição (ex: 60%)
-          const tarifaFioB_Efetiva = tarifaFioB_Cheia * percentualFioB;
-
-          const tarifaTUSD_Total = tarifaTUSD_Base + tarifaFioB_Efetiva;
+          // ===== ESTRUTURA REAL EQUATORIAL GOIÁS (2026) =====
           
-          // NOVO: Iluminação Pública (COSIP) proporcional acompanhando os cálculos
-          const tarifaCOSIP = 0.0550; // Valor base por kWh (proporcional ao uso)
+          // 1. Tarifa Base Líquida (Extraída das notas fiscais da Equatorial)
+          const tarifaTE_TUSD = 0.891810; // Custo base real da energia
+          const bandeiraAmarela = 0.018850; // Adicional Bandeira Amarela
+          const tarifaLiquidaUnitaria = tarifaTE_TUSD + bandeiraAmarela;
+          
+          valorBaseLiq = consumo * tarifaLiquidaUnitaria;
 
-          // 2. Alíquota Progressiva de ICMS (por faixas de consumo)
+          // 2. Tributação Direta (ICMS + PIS/COFINS)
           let aliqICMS = 0;
           if (consumo <= 50) {
-            aliqICMS = 0.00; // Isenção total
-          } else if (consumo <= 200) {
-            aliqICMS = 0.12; // Alíquota reduzida 12%
+            aliqICMS = 0.00; // Isenção GO até 50kWh
           } else {
-            aliqICMS = 0.19; // Alíquota padrão/modal 19%
+            aliqICMS = 0.19; // Modal 19%
           }
-
-          // 3. PIS e COFINS Dinâmico Efetivo
-          const aliqPIS = 0.0165;
-          const aliqCOFINS = 0.0760;
-          const somaAliquotas = aliqICMS + aliqPIS + aliqCOFINS;
-
-          // Multiplicador do Gross-Up (Cálculo "Por Dentro")
-          const multiplicadorGrossUp = 1 / (1 - somaAliquotas);
-
-          // 4. Separação de custos operacionais líquidos
-          const valorTE_Liquido = consumo * tarifaTE;
-          const valorTUSD_Liquido = consumo * tarifaTUSD_Total;
-          const valorCOSIP_Liquido = consumo * tarifaCOSIP;
           
-          // 5. Aplicando os impostos por dentro (Gross-Up) de forma unificada
-          const valorEnergiaBruto = (valorTE_Liquido + valorTUSD_Liquido) * multiplicadorGrossUp;
-          const valorCOSIPBruto = valorCOSIP_Liquido * multiplicadorGrossUp;
+          const aliqPIS = 0.009398; // Ref. real PIS faturado
+          const aliqCOFINS = 0.043455; // Ref. real COFINS faturado
+          const aliqTotal = aliqICMS + aliqPIS + aliqCOFINS;
+
+          // 3. Fator de Correção da Fatura Cheia
+          // Utilizando o valor exato faturado pela distribuidora (R$ 1,187 por kWh)
+          const tarifaFinalUnitaria = 1.18710467;
           
-          // O total de impostos é a diferença entre os totais brutos e líquidos (Energia + COSIP)
-          const baseBrutaTotal = valorEnergiaBruto + valorCOSIPBruto;
-          const baseLiquidaTotal = valorTE_Liquido + valorTUSD_Liquido + valorCOSIP_Liquido;
-          valorImpostos = baseBrutaTotal - baseLiquidaTotal;
+          valorServico = consumo * tarifaFinalUnitaria;
+          valorImpostos = valorServico - valorBaseLiq;
 
-          valorTE = valorTE_Liquido; // Mantém-se puro na interface para transparência
-          valorTUSD = valorTUSD_Liquido; 
-
-          valorServico = valorEnergiaBruto;
-          extra = valorCOSIPBruto;
-          tarifaBasica = 0;
+          // 4. CIP / Iluminação Pública Municipal
+          // Através de regressão linear baseada nas faturas recebidas (R$ 16,56 e R$ 20,73)
+          extra = 3.43 + (0.10425 * consumo);
         }
 
         const total = valorServico + extra + tarifaBasica;
 
-        // Atualização dos componentes no DOM
-        document.getElementById("rotuloConsumo").textContent = "Consumo registrado";
-        document.getElementById("valorConsumo").textContent = `${consumo} ${unidade}`;
+        document.getElementById("rotuloConsumo").textContent =
+          "Consumo registrado";
+        document.getElementById("valorConsumo").textContent =
+          `${consumo} ${unidade}`;
 
         if (tipo === "ENERGIA") {
-          document.getElementById("rotuloTE").style.display = "block";
-          document.getElementById("valorTE").style.display = "block";
-          document.getElementById("valorTE").textContent = `R$ ${valorTE.toFixed(2)}`;
-
-          document.getElementById("rotuloTUSD").style.display = "block";
-          document.getElementById("valorTUSD").style.display = "block";
-          document.getElementById("valorTUSD").textContent = `R$ ${valorTUSD.toFixed(2)}`;
+          document.getElementById("rotuloBase").style.display = "block";
+          document.getElementById("valorBase").style.display = "block";
+          document.getElementById("valorBase").textContent =
+            `R$ ${valorBaseLiq.toFixed(2)}`;
 
           document.getElementById("rotuloImpostos").style.display = "block";
           document.getElementById("valorImpostos").style.display = "block";
-          document.getElementById("valorImpostos").textContent = `R$ ${valorImpostos.toFixed(2)}`;
+          document.getElementById("valorImpostos").textContent =
+            `R$ ${valorImpostos.toFixed(2)}`;
 
-          document.getElementById("rotuloTarifa").textContent = "Subtotal Energia (TE + TUSD com Tributos)";
+          document.getElementById("rotuloTarifa").textContent =
+            "Custos da Distribuidora (Energia)";
         } else {
-          document.getElementById("rotuloTE").style.display = "none";
-          document.getElementById("valorTE").style.display = "none";
-          document.getElementById("rotuloTUSD").style.display = "none";
-          document.getElementById("valorTUSD").style.display = "none";
+          document.getElementById("rotuloBase").style.display = "none";
+          document.getElementById("valorBase").style.display = "none";
           document.getElementById("rotuloImpostos").style.display = "none";
           document.getElementById("valorImpostos").style.display = "none";
 
-          document.getElementById("rotuloTarifa").textContent = "Valor da água";
+          document.getElementById("rotuloTarifa").textContent =
+            tipo === "AGUA" ? "Valor da água" : "Valor da energia";
         }
 
-        document.getElementById("valorTarifa").textContent = `R$ ${valorServico.toFixed(2)}`;
-        
+        document.getElementById("valorTarifa").textContent =
+          `R$ ${valorServico.toFixed(2)}`;
+
         document.getElementById("rotuloExtra").textContent =
-          tipo === "AGUA" ? "Esgoto (coleta + tratamento)" : "Iluminação pública (COSIP c/ Tributos)";
-        document.getElementById("valorExtra").textContent = `R$ ${extra.toFixed(2)}`;
+          tipo === "AGUA"
+            ? "Esgoto (coleta + tratamento)"
+            : "Iluminação pública (CIP/COSIP)";
+
+        document.getElementById("valorExtra").textContent =
+          `R$ ${extra.toFixed(2)}`;
 
         const linhaBasica = document.getElementById("linhaBasica");
         if (tipo === "AGUA") {
           linhaBasica.style.display = "flex";
-          document.getElementById("valorBasica").textContent = `R$ ${tarifaBasica.toFixed(2)}`;
+          document.getElementById("valorBasica").textContent =
+            `R$ ${tarifaBasica.toFixed(2)}`;
         } else {
           linhaBasica.style.display = "none";
         }
 
-        document.getElementById("valorTotal").textContent = `R$ ${total.toFixed(2)}`;
+        document.getElementById("valorTotal").textContent =
+          `R$ ${total.toFixed(2)}`;
       }
 
       document.getElementById("btnWhatsapp").onclick = () => {
