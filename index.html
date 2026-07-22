@@ -449,7 +449,7 @@
           </div>
           <div class="linha-fatura">
             <span class="rotulo" id="rotuloImpostos"
-              >Tributos (ICMS 19% + PIS/COFINS)</span
+              >Tributos (ICMS Escalalonado + PIS/COFINS)</span
             ><span class="valor" id="valorImpostos">—</span>
           </div>
           <div class="linha-fatura destaque-subtotal">
@@ -619,37 +619,41 @@
           extra = totalEsgoto;
           tarifaBasica = 17.46;
         } else {
-          // ===== ESTRUTURA REAL EQUATORIAL GOIÁS (2026) =====
+          // ===== ESTRUTURA REAL EQUATORIAL GOIÁS (COM ALÍQUOTAS DE ICMS ESCALONADAS) =====
           
-          // 1. Tarifa Base Líquida (Extraída das notas fiscais da Equatorial)
-          const tarifaTE_TUSD = 0.891810; // Custo base real da energia
-          const bandeiraAmarela = 0.018850; // Adicional Bandeira Amarela
-          const tarifaLiquidaUnitaria = tarifaTE_TUSD + bandeiraAmarela;
+          // 1. Tarifa Base Líquida
+          const tarifaTE_TUSD = 0.891810; 
+          const bandeiraAmarela = 0.018850; 
+          const tarifaLiquidaUnitaria = tarifaTE_TUSD + bandeiraAmarela; 
           
           valorBaseLiq = consumo * tarifaLiquidaUnitaria;
 
-          // 2. Tributação Direta (ICMS + PIS/COFINS)
-          let aliqICMS = 0;
+          // 2. Alíquotas de ICMS Escalonadas conforme solicitado:
+          // - Até 50 kWh: Isenção total (0%)
+          // - De 51 kWh até 200 kWh: Alíquota reduzida de 12%
+          // - Acima de 200 kWh: Alíquota padrão/modal de 19%
+          let aliqICMS = 0.00;
           if (consumo <= 50) {
-            aliqICMS = 0.00; // Isenção GO até 50kWh
+            aliqICMS = 0.00;
+          } else if (consumo <= 200) {
+            aliqICMS = 0.12;
           } else {
-            aliqICMS = 0.19; // Modal 19%
+            aliqICMS = 0.19;
           }
-          
-          const aliqPIS = 0.009398; // Ref. real PIS faturado
-          const aliqCOFINS = 0.043455; // Ref. real COFINS faturado
-          const aliqTotal = aliqICMS + aliqPIS + aliqCOFINS;
 
-          // 3. Fator de Correção da Fatura Cheia
-          // Utilizando o valor exato faturado pela distribuidora (R$ 1,187 por kWh)
-          const tarifaFinalUnitaria = 1.18710467;
-          
-          valorServico = consumo * tarifaFinalUnitaria;
-          valorImpostos = valorServico - valorBaseLiq;
+          const aliqPIS = 0.009398; 
+          const aliqCOFINS = 0.043455; 
 
-          // 4. CIP / Iluminação Pública Municipal
-          // Através de regressão linear baseada nas faturas recebidas (R$ 16,56 e R$ 20,73)
-          extra = 3.43 + (0.10425 * consumo);
+          // 3. Aplicação do cálculo considerando a base líquida e os tributos proporcionais
+          const impostoICMS = valorBaseLiq * aliqICMS;
+          const impostoPIS = valorBaseLiq * aliqPIS;
+          const impostoCOFINS = valorBaseLiq * aliqCOFINS;
+          
+          valorImpostos = impostoICMS + impostoPIS + impostoCOFINS;
+          valorServico = valorBaseLiq + valorImpostos;
+
+          // 4. CIP / Iluminação Pública Municipal 
+          extra = 3.43 + (0.10425 * consumo); 
         }
 
         const total = valorServico + extra + tarifaBasica;
