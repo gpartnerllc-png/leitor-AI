@@ -440,15 +440,15 @@
             <span class="valor" id="valorConsumo">—</span>
           </div>
           <div class="linha-fatura">
-            <span class="rotulo" id="rotuloTE">Tarifa TE (Energia)</span>
+            <span class="rotulo" id="rotuloTE">Tarifa TE (Energia) Líquida</span>
             <span class="valor" id="valorTE">—</span>
           </div>
           <div class="linha-fatura">
-            <span class="rotulo" id="rotuloTUSD">TUSD (Uso da Rede + Fio B GD)</span>
+            <span class="rotulo" id="rotuloTUSD">TUSD (Uso da Rede + Fio B GD) Líquida</span>
             <span class="valor" id="valorTUSD">—</span>
           </div>
           <div class="linha-fatura">
-            <span class="rotulo" id="rotuloImpostos">Tributos (ICMS + PIS/COFINS)</span>
+            <span class="rotulo" id="rotuloImpostos">Tributos incidentes (ICMS + PIS/COFINS)</span>
             <span class="valor" id="valorImpostos">—</span>
           </div>
           <div class="linha-fatura destaque-subtotal">
@@ -623,7 +623,9 @@
           const tarifaFioB_Efetiva = tarifaFioB_Cheia * percentualFioB;
 
           const tarifaTUSD_Total = tarifaTUSD_Base + tarifaFioB_Efetiva;
-          const tarifaLiquidaTotal = tarifaTE + tarifaTUSD_Total;
+          
+          // NOVO: Iluminação Pública (COSIP) proporcional acompanhando os cálculos
+          const tarifaCOSIP = 0.0550; // Valor base por kWh (proporcional ao uso)
 
           // 2. Alíquota Progressiva de ICMS (por faixas de consumo)
           let aliqICMS = 0;
@@ -640,17 +642,28 @@
           const aliqCOFINS = 0.0760;
           const somaAliquotas = aliqICMS + aliqPIS + aliqCOFINS;
 
-          // 4. Cálculo "Por Dentro" (Gross-Up)
-          const baseLiquidaSemImpostos = consumo * tarifaLiquidaTotal;
-          const valorEnergiaBruto = baseLiquidaSemImpostos / (1 - somaAliquotas);
+          // Multiplicador do Gross-Up (Cálculo "Por Dentro")
+          const multiplicadorGrossUp = 1 / (1 - somaAliquotas);
 
-          // Separação proporcional de custos para o detalhamento da fatura
-          valorTE = (tarifaTE / tarifaLiquidaTotal) * baseLiquidaSemImpostos;
-          valorTUSD = (tarifaTUSD_Total / tarifaLiquidaTotal) * baseLiquidaSemImpostos;
-          valorImpostos = valorEnergiaBruto - baseLiquidaSemImpostos;
+          // 4. Separação de custos operacionais líquidos
+          const valorTE_Liquido = consumo * tarifaTE;
+          const valorTUSD_Liquido = consumo * tarifaTUSD_Total;
+          const valorCOSIP_Liquido = consumo * tarifaCOSIP;
+          
+          // 5. Aplicando os impostos por dentro (Gross-Up) de forma unificada
+          const valorEnergiaBruto = (valorTE_Liquido + valorTUSD_Liquido) * multiplicadorGrossUp;
+          const valorCOSIPBruto = valorCOSIP_Liquido * multiplicadorGrossUp;
+          
+          // O total de impostos é a diferença entre os totais brutos e líquidos (Energia + COSIP)
+          const baseBrutaTotal = valorEnergiaBruto + valorCOSIPBruto;
+          const baseLiquidaTotal = valorTE_Liquido + valorTUSD_Liquido + valorCOSIP_Liquido;
+          valorImpostos = baseBrutaTotal - baseLiquidaTotal;
+
+          valorTE = valorTE_Liquido; // Mantém-se puro na interface para transparência
+          valorTUSD = valorTUSD_Liquido; 
 
           valorServico = valorEnergiaBruto;
-          extra = 20.00; // Iluminação Pública (COSIP)
+          extra = valorCOSIPBruto;
           tarifaBasica = 0;
         }
 
@@ -673,7 +686,7 @@
           document.getElementById("valorImpostos").style.display = "block";
           document.getElementById("valorImpostos").textContent = `R$ ${valorImpostos.toFixed(2)}`;
 
-          document.getElementById("rotuloTarifa").textContent = "Subtotal Energia (Com Tributos)";
+          document.getElementById("rotuloTarifa").textContent = "Subtotal Energia (TE + TUSD com Tributos)";
         } else {
           document.getElementById("rotuloTE").style.display = "none";
           document.getElementById("valorTE").style.display = "none";
@@ -686,8 +699,9 @@
         }
 
         document.getElementById("valorTarifa").textContent = `R$ ${valorServico.toFixed(2)}`;
+        
         document.getElementById("rotuloExtra").textContent =
-          tipo === "AGUA" ? "Esgoto (coleta + tratamento)" : "Iluminação pública (COSIP)";
+          tipo === "AGUA" ? "Esgoto (coleta + tratamento)" : "Iluminação pública (COSIP c/ Tributos)";
         document.getElementById("valorExtra").textContent = `R$ ${extra.toFixed(2)}`;
 
         const linhaBasica = document.getElementById("linhaBasica");
