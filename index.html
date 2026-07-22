@@ -278,14 +278,6 @@
         font-family: "JetBrains Mono", monospace;
         font-weight: 600;
       }
-
-      .destaque-subtotal {
-        background: rgba(255, 255, 255, 0.02);
-        padding-left: 8px;
-        padding-right: 8px;
-        border-radius: 6px;
-      }
-
       .total-fatura {
         display: flex;
         justify-content: space-between;
@@ -439,30 +431,20 @@
         </div>
         <div id="faturaConteudo" style="display: none">
           <div class="linha-fatura">
-            <span class="rotulo" id="rotuloConsumo">Consumo</span
-            ><span class="valor" id="valorConsumo">—</span>
+            <span class="rotulo" id="rotuloConsumo">Consumo</span>
+            <span class="valor" id="valorConsumo">—</span>
           </div>
           <div class="linha-fatura">
-            <span class="rotulo" id="rotuloBase"
-              >Tarifa Base (TE+TUSD c/ Bandeira)</span
-            ><span class="valor" id="valorBase">—</span>
-          </div>
-          <div class="linha-fatura">
-            <span class="rotulo" id="rotuloImpostos"
-              >Tributos (ICMS Escalalonado + PIS/COFINS)</span
-            ><span class="valor" id="valorImpostos">—</span>
-          </div>
-          <div class="linha-fatura destaque-subtotal">
-            <span class="rotulo" id="rotuloTarifa">Valor do serviço</span
-            ><span class="valor" id="valorTarifa">—</span>
+            <span class="rotulo" id="rotuloTarifa">Valor do serviço</span>
+            <span class="valor" id="valorTarifa">—</span>
           </div>
           <div class="linha-fatura" id="linhaExtra">
-            <span class="rotulo" id="rotuloExtra">Taxa adicional</span
-            ><span class="valor" id="valorExtra">—</span>
+            <span class="rotulo" id="rotuloExtra">Taxa adicional</span>
+            <span class="valor" id="valorExtra">—</span>
           </div>
           <div class="linha-fatura" id="linhaBasica" style="display: none">
-            <span class="rotulo">Tarifa básica</span
-            ><span class="valor" id="valorBasica">—</span>
+            <span class="rotulo">Tarifa básica</span>
+            <span class="valor" id="valorBasica">—</span>
           </div>
           <div class="total-fatura">
             <span class="label">Total a pagar</span>
@@ -498,19 +480,16 @@
       const digitos = [0, 1, 2, 3, 4].map((i) =>
         document.getElementById("d" + i),
       );
-
       btnAgua.onclick = () => {
         tipoSelecionado = "AGUA";
         btnAgua.classList.add("ativo");
         btnEnergia.classList.remove("ativo");
       };
-
       btnEnergia.onclick = () => {
         tipoSelecionado = "ENERGIA";
         btnEnergia.classList.add("ativo");
         btnAgua.classList.remove("ativo");
       };
-
       inputFoto.onchange = (e) => {
         fotoSelecionada = e.target.files[0];
         if (fotoSelecionada) {
@@ -518,7 +497,6 @@
           statusTexto.textContent = "foto carregada · pronta para processar";
         }
       };
-
       // ===== Animação do visor (elemento assinatura) =====
       function animarVisor(leituraFinal) {
         const str = String(leituraFinal).padStart(5, "0").split("");
@@ -532,14 +510,13 @@
       }
 
       // ===== Fluxo principal =====
+      // Troque REST_API_URL pelo endereço do backend Node publicado (Railway/Render)
       const API_URL = "https://cd-leitor-medidores.contatodroppfy.workers.dev/";
-
       btnProcessar.onclick = async () => {
         const leituraManual =
           document.getElementById("inputLeituraManual").value;
         const leituraAnterior =
           Number(document.getElementById("inputLeituraAnterior").value) || 0;
-
         if (!leituraManual && !fotoSelecionada) {
           statusTexto.textContent =
             "tire uma foto ou digite a leitura manualmente";
@@ -550,6 +527,7 @@
 
         let leituraFinal;
         if (leituraManual) {
+          // Caminho manual: sem OCR, usa exatamente o número digitado
           statusTexto.textContent = "usando leitura digitada manualmente…";
           await new Promise((r) => setTimeout(r, 300));
           leituraFinal = Number(leituraManual);
@@ -558,10 +536,13 @@
             '<span class="ok">leitura manual aplicada</span>';
           statusConfianca.textContent = "origem: digitada";
         } else {
+          // Caminho por foto — ainda em modo demonstração até o frontend ser
+          // conectado de vez ao backend (precisa de login/token — próximo passo)
           statusTexto.textContent =
             "processando com visão computacional… (modo demonstração)";
           await new Promise((r) => setTimeout(r, 900));
           leituraFinal = leituraAnterior + 96;
+          // simula 96 m³/kWh de consumo no mês
           animarVisor(leituraFinal);
           statusTexto.innerHTML =
             '<span class="ok">leitura confirmada (demo)</span>';
@@ -571,19 +552,16 @@
         mostrarFatura(tipoSelecionado, leituraFinal - leituraAnterior);
         btnProcessar.disabled = false;
       };
-
       function mostrarFatura(tipo, consumo) {
         document.getElementById("faturaVazia").style.display = "none";
         document.getElementById("faturaConteudo").style.display = "block";
-
         const unidade = tipo === "AGUA" ? "m³" : "kWh";
         let valorServico,
           extra,
           tarifaBasica = 0;
-        let valorBaseLiq = 0,
-          valorImpostos = 0;
-
         if (tipo === "AGUA") {
+          // Tabela oficial: Resolução Conjunta Nº 1/2026/AGR/GESG-06064 - AGR/AMAE
+          // (Residencial Normal) — mesmos valores usados no backend/billing.js
           const faixasAgua = [
             { ate: 10, agua: 5.77, esgoto: 4.61 + 1.15 },
             { ate: 15, agua: 6.51, esgoto: 5.21 + 1.3 },
@@ -594,12 +572,10 @@
             { ate: 50, agua: 12.33, esgoto: 9.86 + 2.47 },
             { ate: Infinity, agua: 14.06, esgoto: 11.25 + 2.81 },
           ];
-
           let restante = consumo,
             anterior = 0,
             totalAgua = 0,
             totalEsgoto = 0;
-
           for (const faixa of faixasAgua) {
             if (restante <= 0) break;
             const naFaixa = Math.min(restante, faixa.ate - anterior);
@@ -612,13 +588,7 @@
           extra = totalEsgoto;
           tarifaBasica = 17.46;
         } else {
-          // ===== CÁLCULO REAL EQUATORIAL GO COM BASE NAS FATURAS REAIS =====
-          // Tarifa unitária real com impostos embutidos tirada da nota fiscal da Equatorial (aprox. R$ 1.126 p/ kWh não compensado)
-          const tarifaUnitTributada = 1.126017;
-          
-          valorBaseLiq = consumo * tarifaUnitTributada;
-
-          // Alíquotas exatas do ICMS escalonado e PIS/COFINS da concessionária baseadas nas diretrizes fornecidas:
+          // ===== CÁLCULO DE ENERGIA COM ICMS ESCALONADO E CIP DINÂMICA =====
           let aliqICMS = 0.00;
           if (consumo <= 50) {
             aliqICMS = 0.00; // Isenção total até 50 kWh
@@ -628,58 +598,31 @@
             aliqICMS = 0.19; // 19% padrão acima de 200 kWh
           }
 
-          const aliqPIS = 0.003931; 
-          const aliqCOFINS = 0.018287; 
-
+          const tarifaBaseUnit = 0.891810;
+          const valorBaseLiq = consumo * tarifaBaseUnit;
           const impostoICMS = valorBaseLiq * aliqICMS;
-          const impostoPIS = valorBaseLiq * aliqPIS;
-          const impostoCOFINS = valorBaseLiq * aliqCOFINS;
-          
-          valorImpostos = impostoICMS + impostoPIS + impostoCOFINS;
-          valorServico = valorBaseLiq;
+          const impostoPIS = valorBaseLiq * 0.009398;
+          const impostoCOFINS = valorBaseLiq * 0.043455;
 
-          // CIP / Contribuição de Iluminação Pública Municipal padrão conforme histórico
-          extra = 16.56; 
+          valorServico = valorBaseLiq + impostoICMS + impostoPIS + impostoCOFINS;
+          
+          // Iluminação pública (CIP/COSIP) dinâmica acompanhando o consumo em kWh
+          extra = 3.43 + (0.10425 * consumo);
         }
 
         const total = valorServico + extra + tarifaBasica;
-
         document.getElementById("rotuloConsumo").textContent =
           "Consumo registrado";
         document.getElementById("valorConsumo").textContent =
           `${consumo} ${unidade}`;
-
-        if (tipo === "ENERGIA") {
-          document.getElementById("rotuloBase").style.display = "block";
-          document.getElementById("valorBase").style.display = "block";
-          document.getElementById("valorBase").textContent =
-            `R$ ${valorBaseLiq.toFixed(2)}`;
-
-          document.getElementById("rotuloImpostos").style.display = "block";
-          document.getElementById("valorImpostos").style.display = "block";
-          document.getElementById("valorImpostos").textContent =
-            `R$ ${valorImpostos.toFixed(2)}`;
-
-          document.getElementById("rotuloTarifa").textContent =
-            "Custos da Distribuidora (Energia)";
-        } else {
-          document.getElementById("rotuloBase").style.display = "none";
-          document.getElementById("valorBase").style.display = "none";
-          document.getElementById("rotuloImpostos").style.display = "none";
-          document.getElementById("valorImpostos").style.display = "none";
-
-          document.getElementById("rotuloTarifa").textContent =
-            tipo === "AGUA" ? "Valor da água" : "Valor da energia";
-        }
-
+        document.getElementById("rotuloTarifa").textContent =
+          tipo === "AGUA" ? "Valor da água" : "Valor da energia";
         document.getElementById("valorTarifa").textContent =
           `R$ ${valorServico.toFixed(2)}`;
-
         document.getElementById("rotuloExtra").textContent =
           tipo === "AGUA"
             ? "Esgoto (coleta + tratamento)"
             : "Iluminação pública (CIP)";
-
         document.getElementById("valorExtra").textContent =
           `R$ ${extra.toFixed(2)}`;
 
