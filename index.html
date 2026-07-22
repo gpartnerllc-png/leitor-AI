@@ -532,7 +532,6 @@
       }
 
       // ===== Fluxo principal =====
-      // Troque REST_API_URL pelo endereço do backend Node publicado (Railway/Render)
       const API_URL = "https://cd-leitor-medidores.contatodroppfy.workers.dev/";
 
       btnProcessar.onclick = async () => {
@@ -551,7 +550,6 @@
 
         let leituraFinal;
         if (leituraManual) {
-          // Caminho manual: sem OCR, usa exatamente o número digitado
           statusTexto.textContent = "usando leitura digitada manualmente…";
           await new Promise((r) => setTimeout(r, 300));
           leituraFinal = Number(leituraManual);
@@ -560,13 +558,10 @@
             '<span class="ok">leitura manual aplicada</span>';
           statusConfianca.textContent = "origem: digitada";
         } else {
-          // Caminho por foto — ainda em modo demonstração até o frontend ser
-          // conectado de vez ao backend (precisa de login/token — próximo passo)
           statusTexto.textContent =
             "processando com visão computacional… (modo demonstração)";
           await new Promise((r) => setTimeout(r, 900));
           leituraFinal = leituraAnterior + 96;
-          // simula 96 m³/kWh de consumo no mês
           animarVisor(leituraFinal);
           statusTexto.innerHTML =
             '<span class="ok">leitura confirmada (demo)</span>';
@@ -589,8 +584,6 @@
           valorImpostos = 0;
 
         if (tipo === "AGUA") {
-          // Tabela oficial: Resolução Conjunta Nº 1/2026/AGR/GESG-06064 - AGR/AMAE
-          // (Residencial Normal) — mesmos valores usados no backend/billing.js
           const faixasAgua = [
             { ate: 10, agua: 5.77, esgoto: 4.61 + 1.15 },
             { ate: 15, agua: 6.51, esgoto: 5.21 + 1.3 },
@@ -619,41 +612,34 @@
           extra = totalEsgoto;
           tarifaBasica = 17.46;
         } else {
-          // ===== ESTRUTURA REAL EQUATORIAL GOIÁS (COM ALÍQUOTAS DE ICMS ESCALONADAS) =====
+          // ===== CÁLCULO REAL EQUATORIAL GO COM BASE NAS FATURAS REAIS =====
+          // Tarifa unitária real com impostos embutidos tirada da nota fiscal da Equatorial (aprox. R$ 1.126 p/ kWh não compensado)
+          const tarifaUnitTributada = 1.126017;
           
-          // 1. Tarifa Base Líquida
-          const tarifaTE_TUSD = 0.891810; 
-          const bandeiraAmarela = 0.018850; 
-          const tarifaLiquidaUnitaria = tarifaTE_TUSD + bandeiraAmarela; 
-          
-          valorBaseLiq = consumo * tarifaLiquidaUnitaria;
+          valorBaseLiq = consumo * tarifaUnitTributada;
 
-          // 2. Alíquotas de ICMS Escalonadas conforme solicitado:
-          // - Até 50 kWh: Isenção total (0%)
-          // - De 51 kWh até 200 kWh: Alíquota reduzida de 12%
-          // - Acima de 200 kWh: Alíquota padrão/modal de 19%
+          // Alíquotas exatas do ICMS escalonado e PIS/COFINS da concessionária baseadas nas diretrizes fornecidas:
           let aliqICMS = 0.00;
           if (consumo <= 50) {
-            aliqICMS = 0.00;
+            aliqICMS = 0.00; // Isenção total até 50 kWh
           } else if (consumo <= 200) {
-            aliqICMS = 0.12;
+            aliqICMS = 0.12; // 12% de 51 até 200 kWh
           } else {
-            aliqICMS = 0.19;
+            aliqICMS = 0.19; // 19% padrão acima de 200 kWh
           }
 
-          const aliqPIS = 0.009398; 
-          const aliqCOFINS = 0.043455; 
+          const aliqPIS = 0.003931; 
+          const aliqCOFINS = 0.018287; 
 
-          // 3. Aplicação do cálculo considerando a base líquida e os tributos proporcionais
           const impostoICMS = valorBaseLiq * aliqICMS;
           const impostoPIS = valorBaseLiq * aliqPIS;
           const impostoCOFINS = valorBaseLiq * aliqCOFINS;
           
           valorImpostos = impostoICMS + impostoPIS + impostoCOFINS;
-          valorServico = valorBaseLiq + valorImpostos;
+          valorServico = valorBaseLiq;
 
-          // 4. CIP / Iluminação Pública Municipal 
-          extra = 3.43 + (0.10425 * consumo); 
+          // CIP / Contribuição de Iluminação Pública Municipal padrão conforme histórico
+          extra = 16.56; 
         }
 
         const total = valorServico + extra + tarifaBasica;
@@ -692,7 +678,7 @@
         document.getElementById("rotuloExtra").textContent =
           tipo === "AGUA"
             ? "Esgoto (coleta + tratamento)"
-            : "Iluminação pública (CIP/COSIP)";
+            : "Iluminação pública (CIP)";
 
         document.getElementById("valorExtra").textContent =
           `R$ ${extra.toFixed(2)}`;
