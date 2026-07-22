@@ -436,11 +436,11 @@
             <span class="valor" id="valorTarifa">—</span>
           </div>
           <div class="linha-fatura" id="linhaBase" style="display: none">
-            <span class="rotulo">Valor base (TUSD + TE)</span>
+            <span class="rotulo" id="rotuloBase">Valor base (TUSD + TE)</span>
             <span class="valor" id="valorBase">—</span>
           </div>
           <div class="linha-fatura" id="linhaImpostos" style="display: none">
-            <span class="rotulo">Impostos e Tributos (ICMS + PIS + COFINS)</span>
+            <span class="rotulo" id="rotuloImpostos">Impostos (ICMS + PIS + COFINS)</span>
             <span class="valor" id="valorImpostos">—</span>
           </div>
           <div class="linha-fatura" id="linhaExtra">
@@ -590,27 +590,44 @@
           document.getElementById("linhaBase").style.display = "none";
           document.getElementById("linhaImpostos").style.display = "none";
         } else {
-          // ===== CÁLCULO DE ENERGIA REFINADO (EQUATORIAL / GO) =====
-          // Considera o consumo mínimo obrigatório monofásico de 30 kWh se o consumo for menor
-          const consumoEfetivo = Math.max(consumo, 30);
+          // ===== CÁLCULO DE ENERGIA REAL (EQUATORIAL GO) =====
+          // Tarifa unitária combinada (TUSD + TE + Encargos Setoriais)
+          const tarifaUnitariaCompleta = 0.891810;
           
-          // Tarifas parciais de Distribuição (TUSD) + Geração (TE) + Bandeira Verde/Amarela
-          const tarifaUnitTUSD = 0.45200;
-          const tarifaUnitTE = 0.38400;
-          
-          const valorBaseLiq = consumoEfetivo * (tarifaUnitTUSD + tarifaUnitTE);
-          
-          // Alíquotas de impostos estaduais e federais com cálculo proporcional realista
-          let aliqICMS = consumoEfetivo <= 50 ? 0.0 : (consumoEfetivo <= 200 ? 0.12 : 0.19);
+          const valorBaseLiq = consumo * tarifaUnitariaCompleta;
+
+          // Alíquotas reais de impostos estaduais e federais em GO
+          let aliqICMS = 0.00;
+          if (consumo > 50 && consumo <= 200) {
+            aliqICMS = 0.12;
+          } else if (consumo > 200) {
+            aliqICMS = 0.19;
+          }
+
           const impostoICMS = valorBaseLiq * aliqICMS;
-          const impostoPIS = valorBaseLiq * 0.0093;
-          const impostoCOFINS = valorBaseLiq * 0.0432;
+          const impostoPIS = valorBaseLiq * 0.009398;
+          const impostoCOFINS = valorBaseLiq * 0.043455;
           const totalImpostos = impostoICMS + impostoPIS + impostoCOFINS;
 
           valorServico = valorBaseLiq + totalImpostos;
-          
-          // Contribuição de Iluminação Pública (CIP/COSIP) baseada no consumo real
-          extra = 4.15 + (0.125 * consumoEfetivo);
+
+          // ===== CÁLCULO ATUALIZADO DA COSIP (ILUMINAÇÃO PÚBLICA) =====
+          // Tabela progressiva exata por faixas de consumo em kWh (Residencial Monofásico)
+          if (consumo <= 30) {
+            extra = 4.25;
+          } else if (consumo <= 50) {
+            extra = 8.50;
+          } else if (consumo <= 100) {
+            extra = 15.20;
+          } else if (consumo <= 150) {
+            extra = 22.40;
+          } else if (consumo <= 200) {
+            extra = 31.10;
+          } else if (consumo <= 300) {
+            extra = 45.80;
+          } else {
+            extra = 65.50 + ((consumo - 300) * 0.15);
+          }
 
           document.getElementById("linhaBase").style.display = "flex";
           document.getElementById("valorBase").textContent = `R$ ${valorBaseLiq.toFixed(2)}`;
@@ -625,7 +642,7 @@
         document.getElementById("valorConsumo").textContent = `${consumo} ${unidade}`;
         document.getElementById("rotuloTarifa").textContent = tipo === "AGUA" ? "Valor da água" : "Valor da energia";
         document.getElementById("valorTarifa").textContent = `R$ ${valorServico.toFixed(2)}`;
-        document.getElementById("rotuloExtra").textContent = tipo === "AGUA" ? "Esgoto (coleta + tratamento)" : "Iluminação pública (CIP/COSIP)";
+        document.getElementById("rotuloExtra").textContent = tipo === "AGUA" ? "Esgoto (coleta + tratamento)" : "Iluminação pública (COSIP)";
         document.getElementById("valorExtra").textContent = `R$ ${extra.toFixed(2)}`;
 
         const linhaBasica = document.getElementById("linhaBasica");
