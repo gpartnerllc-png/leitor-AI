@@ -436,11 +436,11 @@
             <span class="valor" id="valorTarifa">—</span>
           </div>
           <div class="linha-fatura" id="linhaBase" style="display: none">
-            <span class="rotulo" id="rotuloBase">Valor base (TUSD + TE)</span>
+            <span class="rotulo" id="rotuloBase">Valor base</span>
             <span class="valor" id="valorBase">—</span>
           </div>
           <div class="linha-fatura" id="linhaImpostos" style="display: none">
-            <span class="rotulo" id="rotuloImpostos">Impostos (ICMS + PIS + COFINS)</span>
+            <span class="rotulo" id="rotuloImpostos">Impostos</span>
             <span class="valor" id="valorImpostos">—</span>
           </div>
           <div class="linha-fatura" id="linhaExtra">
@@ -462,7 +462,7 @@
       </div>
 
       <div class="rodape-tecnico">
-        Água: Saneago — Res. Conjunta 1/2026 AGR/AMAE · Energia: Equatorial GO / Bow-e
+        Água: Saneago — Res. Conjunta 1/2026 AGR/AMAE · Energia: Equatorial GO — NF3e real (mai-jun/2026)
       </div>
       <div class="rodape-tecnico">
         leitor.contatodroppfy.workers.dev · TLS · JWT · rate-limited
@@ -590,59 +590,35 @@
           document.getElementById("linhaBase").style.display = "none";
           document.getElementById("linhaImpostos").style.display = "none";
         } else {
-          // ===== CÁLCULO DE ENERGIA REAL (EQUATORIAL GO) =====
-          // Tarifa unitária combinada (TUSD + TE + Encargos Setoriais)
-          const tarifaUnitariaCompleta = 0.891810;
-          
-          const valorBaseLiq = consumo * tarifaUnitariaCompleta;
+          // ===== CÁLCULO DE ENERGIA (EQUATORIAL GO) =====
+          // Tarifa convencional B1 residencial, já com todos os tributos embutidos
+          // (TUSD + TE + ICMS + PIS/COFINS) — extraída diretamente das Notas Fiscais
+          // reais nº 193302420 (mai/2026) e nº 197064560 (jun/2026), mesmo valor nas
+          // duas, portanto é o valor oficial vigente, não estimativa.
+          const tarifaConvencional = 0.891810;
+          valorServico = consumo * tarifaConvencional;
 
-          // Alíquotas reais de impostos estaduais e federais em GO
-          let aliqICMS = 0.00;
-          if (consumo > 50 && consumo <= 200) {
-            aliqICMS = 0.12;
-          } else if (consumo > 200) {
-            aliqICMS = 0.19;
-          }
+          // Adicional de bandeira (oficial ANEEL, Decreto 8.401/2015)
+          const bandeiraAmarelaPorKwh = 0.01885;
+          const custoBandeira = consumo * bandeiraAmarelaPorKwh;
 
-          const impostoICMS = valorBaseLiq * aliqICMS;
-          const impostoPIS = valorBaseLiq * 0.009398;
-          const impostoCOFINS = valorBaseLiq * 0.043455;
-          const totalImpostos = impostoICMS + impostoPIS + impostoCOFINS;
+          // COSIP (Iluminação Pública) — ajustada por regressão linear a partir de
+          // 2 faturas reais de Águas Lindas de Goiás (126kWh→R$16,56, 166kWh→R$20,73).
+          // É uma aproximação local, não uma tabela oficial publicada — confirme se
+          // for usar em outro município.
+          extra = 3.43 + 0.1043 * consumo + custoBandeira;
 
-          valorServico = valorBaseLiq + totalImpostos;
-
-          // ===== CÁLCULO ATUALIZADO DA COSIP (ILUMINAÇÃO PÚBLICA) =====
-          // Tabela progressiva exata por faixas de consumo em kWh (Residencial Monofásico)
-          if (consumo <= 30) {
-            extra = 4.25;
-          } else if (consumo <= 50) {
-            extra = 8.50;
-          } else if (consumo <= 100) {
-            extra = 15.20;
-          } else if (consumo <= 150) {
-            extra = 22.40;
-          } else if (consumo <= 200) {
-            extra = 31.10;
-          } else if (consumo <= 300) {
-            extra = 45.80;
-          } else {
-            extra = 65.50 + ((consumo - 300) * 0.15);
-          }
-
-          document.getElementById("linhaBase").style.display = "flex";
-          document.getElementById("valorBase").textContent = `R$ ${valorBaseLiq.toFixed(2)}`;
-
-          document.getElementById("linhaImpostos").style.display = "flex";
-          document.getElementById("valorImpostos").textContent = `R$ ${totalImpostos.toFixed(2)}`;
+          document.getElementById("linhaBase").style.display = "none";
+          document.getElementById("linhaImpostos").style.display = "none";
         }
 
         const total = valorServico + extra + tarifaBasica;
 
         document.getElementById("rotuloConsumo").textContent = "Consumo registrado";
         document.getElementById("valorConsumo").textContent = `${consumo} ${unidade}`;
-        document.getElementById("rotuloTarifa").textContent = tipo === "AGUA" ? "Valor da água" : "Valor da energia";
+        document.getElementById("rotuloTarifa").textContent = tipo === "AGUA" ? "Valor da água" : "Energia elétrica (tarifa oficial)";
         document.getElementById("valorTarifa").textContent = `R$ ${valorServico.toFixed(2)}`;
-        document.getElementById("rotuloExtra").textContent = tipo === "AGUA" ? "Esgoto (coleta + tratamento)" : "Iluminação pública (COSIP)";
+        document.getElementById("rotuloExtra").textContent = tipo === "AGUA" ? "Esgoto (coleta + tratamento)" : "Bandeira + Iluminação pública";
         document.getElementById("valorExtra").textContent = `R$ ${extra.toFixed(2)}`;
 
         const linhaBasica = document.getElementById("linhaBasica");
